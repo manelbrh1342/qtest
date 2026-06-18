@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qtest"
+version = "0.1.0"
+dependencies = ["pytest", "qiskit"]
+
+[tool.pytest.ini_options]
+markers = [
+    "quantum_mutate: run quantum mutation testing on this test"
+]
+
+[project.entry-points."pytest11"]
+qtest = "qtest.plugin"
