@@ -90,6 +90,8 @@ def qft_circuit():
     qc.swap(0, 2)
     return qc
 
+# NOTE: intentionally weak assertion (is_unitary() checks format, not value).
+# Demonstrates qtest surfacing a low mutation score on a naive test
 @pytest.mark.quantum_mutate(circuit="qft_circuit")
 def test_qft(qft_circuit):
     from qiskit.quantum_info import Operator
@@ -104,6 +106,8 @@ def param_circuit():
     qc = QuantumCircuit(1)
     qc.rz(theta, 0)
     return qc.assign_parameters({theta: np.pi / 2})
+# NOTE: intentionally weak assertion (probability-only check misses phase
+# and angle-sensitivity). Demonstrates qtest surfacing a low mutation score.
 
 @pytest.mark.quantum_mutate(circuit="param_circuit")
 def test_parameterized(param_circuit):
