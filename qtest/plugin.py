@@ -1,6 +1,7 @@
 import pytest
 from qtest.mutants import generate_all_mutants
 from qtest.oracle import validate_circuit, is_killed
+from qtest.diagnosis import diagnose_survivor
 _mutation_results = {}
 
 def pytest_configure(config):
@@ -32,7 +33,8 @@ def pytest_runtest_call(item):
         if is_killed(qc_fixture, mutant):
             killed += 1
         else:
-            survived.append((operator, gate_idx))
+            diagnosis = diagnose_survivor(qc_fixture, mutant)
+            survived.append((operator, gate_idx, diagnosis))
 
     total = len(mutants)
     score = killed / total if total > 0 else 0.0
@@ -63,5 +65,8 @@ def pytest_terminal_summary(terminalreporter):
 
         if survived:
             terminalreporter.write_line("  Survived mutants:")
-            for operator, gate_idx in survived:
+            for operator, gate_idx, diagnosis in survived:
                 terminalreporter.write_line(f"    - {operator} at gate {gate_idx}")
+                terminalreporter.write_line(f"      Reason: {diagnosis['reason']}")
+                terminalreporter.write_line(f"      Explanation: {diagnosis['explanation']}")
+                terminalreporter.write_line(f"      Suggestion: {diagnosis['suggestion']}")
