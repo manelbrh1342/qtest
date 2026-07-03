@@ -1,5 +1,7 @@
 from qiskit.quantum_info import Statevector, Operator
 
+from qtest.classifier import classify_assertion
+
 def _probabilities_match(original,mutant, tol=1e-6):
     """Check if the probabilities of the original and mutant circuits match."""
     original_probs = Statevector(original).probabilities_dict()
@@ -10,11 +12,11 @@ def _probabilities_match(original,mutant, tol=1e-6):
             return False
     return True
 
-# Known limitation: for single-qubit circuits with no entanglement,
-# global phase and weak assertion are indistinguishable by the
-# Statevector oracle. Both cases will be reported as global_phase.
+# Note: for single-qubit unentangled circuits, the Statevector oracle
+# cannot fully distinguish global phase from weak assertion. The AST
+# classifier partially resolves this by inspecting assertion strength.
 
-def diagnose_survivor(original_qc, mutant_qc):
+def diagnose_survivor(original_qc, mutant_qc,source):
     orig_op = Operator(original_qc)
     mut_op = Operator(mutant_qc)
     orig_sv = Statevector(original_qc)
@@ -28,6 +30,22 @@ def diagnose_survivor(original_qc, mutant_qc):
         }
         
     elif orig_sv.equiv(mut_sv):
+        classification = classify_assertion(source)
+        if classification != "strong":
+            return {
+                "reason": "global_phase_or_weak_assertion",
+                "explanation": (
+                    "This mutant survived, but your assertion is not strong enough "
+                    "to rule out a weak test as the cause. The survival may be due "
+                    "to global phase (physically undetectable) or a weak assertion "
+                    "that missed a real difference."
+                ),
+                "suggestion": (
+                    f"Your assertion was classified as '{classification}'. "
+                    "Consider strengthening it with sv.equiv(expected_state) "
+                    "to rule out weak assertion as the cause."
+                )
+            }
         return {
             "reason": "global_phase",
             "explanation": (

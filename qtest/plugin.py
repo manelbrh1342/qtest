@@ -1,3 +1,5 @@
+import inspect
+
 import pytest
 from qtest.mutants import generate_all_mutants
 from qtest.oracle import validate_circuit, is_killed
@@ -33,7 +35,7 @@ def pytest_runtest_call(item):
         if is_killed(qc_fixture, mutant):
             killed += 1
         else:
-            diagnosis = diagnose_survivor(qc_fixture, mutant)
+            diagnosis = diagnose_survivor(qc_fixture, mutant,  inspect.getsource(item.function))
             survived.append((operator, gate_idx, diagnosis))
 
     total = len(mutants)
