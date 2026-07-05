@@ -16,7 +16,20 @@ def _probabilities_match(original,mutant, tol=1e-6):
 # cannot fully distinguish global phase from weak assertion. The AST
 # classifier partially resolves this by inspecting assertion strength.
 
-def diagnose_survivor(original_qc, mutant_qc,source):
+def diagnose_survivor(original_qc, mutant_qc,source,noise_enabled=False,fidelity=None,threshold=0.95):
+    if noise_enabled and fidelity is not None:
+        return {
+            "reason": "noise_survival",
+            "explanation": (
+                f"This mutant survived under noise with a fidelity of {fidelity:.4f}, "
+                f"which is above the threshold of {threshold}. The survival may be due "
+                    "to noise masking the difference between the original and mutant circuits."
+                ),
+            "suggestion": (
+                    "Consider adjusting the noise rate or threshold, or strengthening your test "
+                    "assertions to better detect differences under noise."
+            )
+            }
     orig_op = Operator(original_qc)
     mut_op = Operator(mutant_qc)
     orig_sv = Statevector(original_qc)

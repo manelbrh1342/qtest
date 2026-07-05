@@ -2,7 +2,7 @@ import inspect
 
 import pytest
 from qtest.mutants import generate_all_mutants
-from qtest.oracle import validate_circuit, is_killed
+from qtest.oracle import is_killed_noisy, validate_circuit, is_killed
 from qtest.diagnosis import diagnose_survivor
 _mutation_results = {}
 
@@ -26,17 +26,27 @@ def pytest_runtest_call(item):
             f"quantum_mutate marker requires a '{fixture_name}' fixture. "
             f"Define it or pass the correct name via @pytest.mark.quantum_mutate(circuit='your_fixture_name')"
         )
+    noise_enabled = item.config.getoption("--noise")
+    noise_rate = item.config.getoption("--noise-rate")
     validate_circuit(qc_fixture)
     mutants = generate_all_mutants(qc_fixture)
     killed = 0
     survived = []
 
     for operator, gate_idx, mutant in mutants:
-        if is_killed(qc_fixture, mutant):
-            killed += 1
+        if noise_enabled:
+            mutant_killed, fidelity = is_killed_noisy(qc_fixture, mutant, noise_rate,shots=item.config.getoption("--shots"), threshold=item.config.getoption("--threshold"))
+            if mutant_killed:
+                killed += 1
+            else:
+                diagnosis = diagnose_survivor(qc_fixture, mutant,  inspect.getsource(item.function), noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
+                survived.append((operator, gate_idx, diagnosis, fidelity))
         else:
-            diagnosis = diagnose_survivor(qc_fixture, mutant,  inspect.getsource(item.function))
-            survived.append((operator, gate_idx, diagnosis))
+            if is_killed(qc_fixture, mutant):
+                killed += 1
+            else:
+                diagnosis = diagnose_survivor(qc_fixture, mutant,  inspect.getsource(item.function), noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))
+                survived.append((operator, gate_idx, diagnosis, None))
 
     total = len(mutants)
     score = killed / total if total > 0 else 0.0
@@ -67,8 +77,10 @@ def pytest_terminal_summary(terminalreporter):
 
         if survived:
             terminalreporter.write_line("  Survived mutants:")
-            for operator, gate_idx, diagnosis in survived:
+            for operator, gate_idx, diagnosis, fidelity in survived:
                 terminalreporter.write_line(f"    - {operator} at gate {gate_idx}")
                 terminalreporter.write_line(f"      Reason: {diagnosis['reason']}")
+                if fidelity is not None:
+                    terminalreporter.write_line(f"      Fidelity: {fidelity:.4f}")
                 terminalreporter.write_line(f"      Explanation: {diagnosis['explanation']}")
                 terminalreporter.write_line(f"      Suggestion: {diagnosis['suggestion']}")
