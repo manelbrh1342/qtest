@@ -22,3 +22,5 @@ def pytest_addoption(parser):
     parser.addoption(
         "--threshold", action="store", type=float, default=0.95, help="Set fidelity threshold for noisy tests"
     )
+    parser.addoption("--backend", action="store", default=None,
+                  help="IBM backend name for hardware execution (e.g. ibm_marrakesh)")

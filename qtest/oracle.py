@@ -1,8 +1,10 @@
 import copy
+from qiskit import transpile
 from qiskit_aer.primitives import SamplerV2
 from qiskit_aer.noise import depolarizing_error, NoiseModel
 from qiskit.quantum_info import Statevector
 from qiskit.quantum_info import hellinger_fidelity
+from qiskit_ibm_runtime import SamplerV2 as IBMSamplerV2
 
 def validate_circuit(qc):
     if qc.num_parameters > 0:
@@ -44,3 +46,30 @@ def is_killed_noisy(original_qc, mutant_qc, noise_rate, shots=1024, threshold=0.
     # Calculate the Hellinger fidelity between the two distributions
     fidelity = hellinger_fidelity(counts_original, counts_mutant)
     return (fidelity < threshold, fidelity )
+def is_killed_hardware_batch(original_qc, mutants, backend, shots=1024, threshold=0.95):
+    original_measured = copy.deepcopy(original_qc)
+    original_measured.measure_all()
+    isa_original = transpile(original_measured, backend=backend, optimization_level=1)
+
+    isa_mutants = []
+    for operator, gate_idx, mutant in mutants:
+        mutant_measured = copy.deepcopy(mutant)
+        mutant_measured.measure_all()
+        isa_mutants.append(transpile(mutant_measured, backend=backend, optimization_level=1))
+
+    all_circuits = [isa_original] + isa_mutants
+
+    sampler = IBMSamplerV2(mode=backend)
+    job = sampler.run(all_circuits, shots=shots)
+    result = job.result()
+
+    counts_original = result[0].data.meas.get_counts()
+
+    results = []
+    for i, (operator, gate_idx, mutant) in enumerate(mutants):
+        counts_mutant = result[i + 1].data.meas.get_counts()
+        fidelity = hellinger_fidelity(counts_original, counts_mutant)
+        killed = fidelity < threshold
+        results.append((operator, gate_idx, killed, fidelity))
+
+    return results

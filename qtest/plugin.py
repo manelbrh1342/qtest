@@ -2,8 +2,9 @@ import inspect
 
 import pytest
 from qtest.mutants import generate_all_mutants
-from qtest.oracle import is_killed_noisy, validate_circuit, is_killed
+from qtest.oracle import is_killed_hardware_batch, is_killed_noisy, validate_circuit, is_killed
 from qtest.diagnosis import diagnose_survivor
+from qiskit_ibm_runtime import QiskitRuntimeService
 _mutation_results = {}
 
 def pytest_configure(config):
@@ -28,26 +29,40 @@ def pytest_runtest_call(item):
         )
     noise_enabled = item.config.getoption("--noise")
     noise_rate = item.config.getoption("--noise-rate")
+    backend_name = item.config.getoption("--backend")
     validate_circuit(qc_fixture)
     mutants = generate_all_mutants(qc_fixture)
     killed = 0
     survived = []
-
-    for operator, gate_idx, mutant in mutants:
-        if noise_enabled:
-            mutant_killed, fidelity = is_killed_noisy(qc_fixture, mutant, noise_rate,shots=item.config.getoption("--shots"), threshold=item.config.getoption("--threshold"))
+    if backend_name:
+        service = QiskitRuntimeService()
+        backend = service.backend(backend_name)
+        hw_results = is_killed_hardware_batch(
+            qc_fixture, mutants, backend,
+            shots=item.config.getoption("--shots"),
+            threshold=item.config.getoption("--threshold")
+        )
+        for operator, gate_idx, mutant_killed, fidelity in hw_results:
             if mutant_killed:
                 killed += 1
             else:
-                diagnosis = diagnose_survivor(qc_fixture, mutant,  inspect.getsource(item.function), noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
+                diagnosis = diagnose_survivor(qc_fixture, None, inspect.getsource(item.function), noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
                 survived.append((operator, gate_idx, diagnosis, fidelity))
-        else:
-            if is_killed(qc_fixture, mutant):
-                killed += 1
+    else:
+        for operator, gate_idx, mutant in mutants:
+            if noise_enabled:
+                mutant_killed, fidelity = is_killed_noisy(qc_fixture, mutant, noise_rate, shots=item.config.getoption("--shots"), threshold=item.config.getoption("--threshold"))
+                if mutant_killed:
+                    killed += 1
+                else:
+                    diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
+                    survived.append((operator, gate_idx, diagnosis, fidelity))
             else:
-                diagnosis = diagnose_survivor(qc_fixture, mutant,  inspect.getsource(item.function), noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))
-                survived.append((operator, gate_idx, diagnosis, None))
-
+                if is_killed(qc_fixture, mutant):
+                    killed += 1
+                else:
+                    diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))
+                    survived.append((operator, gate_idx, diagnosis, None))
     total = len(mutants)
     score = killed / total if total > 0 else 0.0
 
