@@ -3,6 +3,9 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 from qiskit.circuit import Parameter
+from qiskit.circuit.library import QFT
+
+from tests.shor_helpers import c_amod15
 
 
 # ── Bell ──────────────────────────────────────────────
@@ -114,3 +117,29 @@ def test_parameterized(param_circuit):
     sv = Statevector(param_circuit)
     probs = sv.probabilities_dict()
     assert probs.get('0', 0) > 0.9
+
+@pytest.fixture
+def shor_circuit():
+    n_count = 4
+    n_work = 4
+    qc = QuantumCircuit(n_count + n_work)
+    qc.h(range(n_count))
+    qc.x(n_count)
+    a = 7
+    for i in range(n_count):
+        exponent = 2 ** i
+        qc.append(c_amod15(a, exponent), [i, n_count+0, n_count+1, n_count+2, n_count+3])
+    qft_inv = QFT(n_count, inverse=True).to_gate()
+    qc.append(qft_inv, range(n_count))
+    return qc
+
+# Assertion checks counting-register marginal only, matching real Shor's measurement practice. 
+# Work-register-only mutations post-entanglement are physically undetectable this way
+
+@pytest.mark.quantum_mutate(circuit="shor_circuit")
+def test_shor_period_finding(shor_circuit):
+    n_count = 4
+    sv= Statevector(shor_circuit)
+    probs = sv.probabilities_dict(qargs=range(n_count))
+    peak_mass =probs.get('0000', 0) + probs.get('0100', 0) + probs.get('1000', 0) + probs.get('1100', 0)
+    assert peak_mass > 0.8
