@@ -30,7 +30,7 @@ def replacement_mutants(qc):
             candidates = [g for g in PARAM_REPLACEMENTS if g(0).name != name]
         elif inst.operation.num_qubits == 2:
             candidates = [g for g in TWO_QUBIT_REPLACEMENTS if g().name != name]
-        elif not params:
+        elif inst.operation.num_qubits == 1 and not params:
             candidates = [g for g in SINGLE_QUBIT_REPLACEMENTS if g().name != name]
         else:
             candidates = []
