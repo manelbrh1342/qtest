@@ -143,3 +143,30 @@ def test_shor_period_finding(shor_circuit):
     probs = sv.probabilities_dict(qargs=range(n_count))
     peak_mass =probs.get('0000', 0) + probs.get('0100', 0) + probs.get('1000', 0) + probs.get('1100', 0)
     assert peak_mass > 0.8
+    
+@pytest.fixture
+def vqc_circuit():
+    n_count=4
+    qc = QuantumCircuit(n_count)
+    qc.ry(0.5, 0)
+    qc.ry(1, 1)
+    qc.ry(1.5, 2)
+    qc.ry(2, 3)
+    qc.rz(0.3, 0)
+    qc.rz(0.6, 1)
+    qc.rz(0.9, 2)
+    qc.rz(1.2, 3)
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    return qc
+
+@pytest.mark.quantum_mutate(circuit="vqc_circuit")
+def test_vqc(vqc_circuit):
+    cx_gates=[
+        (vqc_circuit.find_bit(inst.qubits[0]).index, vqc_circuit.find_bit(inst.qubits[1]).index) for inst in vqc_circuit.data if inst.operation.name == 'cx'
+    ]
+    assert cx_gates == [(0, 1), (1, 2), (2, 3)]
+    sv = Statevector(vqc_circuit)
+    probs = sv.probabilities_dict()
+    assert len(probs) > 1  # not collapsed to a single basis state
