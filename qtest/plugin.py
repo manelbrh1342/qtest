@@ -2,7 +2,7 @@ import inspect
 
 import pytest
 from qtest.mutants import generate_all_mutants
-from qtest.oracle import is_killed_hardware_batch, is_killed_noisy, validate_circuit, is_killed
+from qtest.oracle import is_killed_by_test, is_killed_hardware_batch, is_killed_noisy, validate_circuit, is_killed
 from qtest.diagnosis import diagnose_survivor
 from qiskit_ibm_runtime import QiskitRuntimeService
 _mutation_results = {}
@@ -58,7 +58,7 @@ def pytest_runtest_call(item):
                     diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
                     survived.append((operator, gate_idx, diagnosis, fidelity))
             else:
-                if is_killed(qc_fixture, mutant):
+                if is_killed_by_test(item.function, mutant):
                     killed += 1
                 else:
                     diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))

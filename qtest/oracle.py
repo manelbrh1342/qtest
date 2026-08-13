@@ -73,3 +73,10 @@ def is_killed_hardware_batch(original_qc, mutants, backend, shots=1024, threshol
         results.append((operator, gate_idx, killed, fidelity))
 
     return results
+
+def is_killed_by_test(test_function, mutant_circuit):
+    try:
+        test_function(mutant_circuit)
+        return False 
+    except AssertionError:
+        return True  

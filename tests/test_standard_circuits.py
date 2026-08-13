@@ -1,3 +1,4 @@
+from django.conf.locale import sv
 import pytest
 import numpy as np
 from qiskit import QuantumCircuit
@@ -170,3 +171,17 @@ def test_vqc(vqc_circuit):
     sv = Statevector(vqc_circuit)
     probs = sv.probabilities_dict()
     assert len(probs) > 1  # not collapsed to a single basis state
+    expected_qc = QuantumCircuit(4)
+    expected_qc.ry(0.5, 0)
+    expected_qc.ry(1, 1)
+    expected_qc.ry(1.5, 2)
+    expected_qc.ry(2, 3)
+    expected_qc.rz(0.3, 0)
+    expected_qc.rz(0.6, 1)
+    expected_qc.rz(0.9, 2)
+    expected_qc.rz(1.2, 3)
+    expected_qc.cx(0, 1)
+    expected_qc.cx(1, 2)
+    expected_qc.cx(2, 3)
+    expected_sv = Statevector(expected_qc)
+    assert sv.equiv(expected_sv)
