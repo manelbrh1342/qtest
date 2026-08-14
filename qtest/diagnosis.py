@@ -44,21 +44,6 @@ def diagnose_survivor(original_qc, mutant_qc,source,noise_enabled=False,fidelity
         
     elif orig_sv.equiv(mut_sv):
         classification = classify_assertion(source)
-        if classification != "strong":
-            return {
-                "reason": "global_phase_or_weak_assertion",
-                "explanation": (
-                    "This mutant survived, but your assertion is not strong enough "
-                    "to rule out a weak test as the cause. The survival may be due "
-                    "to global phase (physically undetectable) or a weak assertion "
-                    "that missed a real difference."
-                ),
-                "suggestion": (
-                    f"Your assertion was classified as '{classification}'. "
-                    "Consider strengthening it with sv.equiv(expected_state) "
-                    "to rule out weak assertion as the cause."
-                )
-            }
         return {
             "reason": "global_phase",
             "explanation": (

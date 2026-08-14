@@ -2,6 +2,9 @@ import ast
 
 def classify_assertion(source):
     tree = ast.parse(source)
+    priority = ["strong", "structural", "probability-only", "weak", "unknown"]
+    found = []
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Assert):
             method_names = []
@@ -11,16 +14,21 @@ def classify_assertion(source):
                     method_names.append(child.attr)
                 elif isinstance(child, ast.Name):
                     func_names.append(child.id)
+
             if "equiv" in method_names:
-                return "strong"
+                found.append("strong")
             elif "is_unitary" in method_names:
-                return "structural"
-            elif "len" in func_names:
-                return "weak"
+                found.append("structural")
             elif "probabilities_dict" in method_names or "get" in method_names:
-                return "probability-only"
-            
+                found.append("probability-only")
+            elif "len" in func_names:
+                found.append("weak")
             else:
-                return "unknown"
-    
-    return "unknown"
+                found.append("unknown")
+
+    if not found:
+        return "unknown"
+
+    for level in priority:
+        if level in found:
+            return level
