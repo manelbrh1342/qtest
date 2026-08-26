@@ -1,7 +1,5 @@
 from qiskit.quantum_info import Statevector, Operator
 
-from qtest.classifier import classify_assertion
-
 def _probabilities_match(original,mutant, tol=1e-6):
     """Check if the probabilities of the original and mutant circuits match."""
     original_probs = Statevector(original).probabilities_dict()
@@ -43,7 +41,6 @@ def diagnose_survivor(original_qc, mutant_qc,source,noise_enabled=False,fidelity
         }
         
     elif orig_sv.equiv(mut_sv):
-        classification = classify_assertion(source)
         return {
             "reason": "global_phase",
             "explanation": (

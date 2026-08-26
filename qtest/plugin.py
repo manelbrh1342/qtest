@@ -5,8 +5,37 @@ from qtest.mutants import generate_all_mutants
 from qtest.oracle import is_killed_by_test, is_killed_hardware_batch, is_killed_noisy, validate_circuit, is_killed
 from qtest.diagnosis import diagnose_survivor
 from qiskit_ibm_runtime import QiskitRuntimeService
+import argparse
 _mutation_results = {}
 
+def valid_noise_rate(value):
+    try:
+        rate = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Invalid noise rate: {value}. Must be a float between 0 and 0.05 .")
+    if not (0 <= rate <= 0.05):
+        raise argparse.ArgumentTypeError(f"Invalid noise rate: {value}. Must be between 0 and 0.05 .")
+    return rate
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--noise", action="store_true", default=False, help="Enable noise in tests"
+    )
+    parser.addoption(
+        "--noise-rate", action="store", type=valid_noise_rate, default=0.01, help="Set noise rate for tests"
+    )
+    parser.addoption(
+        "--shots", action="store", type=int, default=1024, help="Set number of shots for noisy tests"
+    )
+    parser.addoption(
+        "--threshold", action="store", type=float, default=0.95, help="Set fidelity threshold for noisy tests"
+    )
+    parser.addoption(
+        "--backend", action="store", default=None,
+        help="IBM backend name for hardware execution (e.g. ibm_marrakesh)"
+    )
+    
 def pytest_configure(config):
     config.addinivalue_line(
         "markers",
@@ -38,21 +67,31 @@ def pytest_runtest_call(item):
         service = QiskitRuntimeService()
         backend = service.backend(backend_name)
         hw_results = is_killed_hardware_batch(
-            qc_fixture, mutants, backend,
+            item.function, qc_fixture, mutants, backend,
             shots=item.config.getoption("--shots"),
             threshold=item.config.getoption("--threshold")
         )
-        for operator, gate_idx, mutant_killed, fidelity in hw_results:
-            if mutant_killed:
+        for operator, gate_idx, mutant, mutant_killed, fidelity, ideal_killed in hw_results:
+            if not ideal_killed:
+                diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))
+                survived.append((operator, gate_idx, diagnosis, None))
+            elif mutant_killed:
                 killed += 1
             else:
-                diagnosis = diagnose_survivor(qc_fixture, None, inspect.getsource(item.function), noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
+                diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
                 survived.append((operator, gate_idx, diagnosis, fidelity))
     else:
         for operator, gate_idx, mutant in mutants:
             if noise_enabled:
-                mutant_killed, fidelity = is_killed_noisy(qc_fixture, mutant, noise_rate, shots=item.config.getoption("--shots"), threshold=item.config.getoption("--threshold"))
-                if mutant_killed:
+                mutant_killed, fidelity, ideal_killed = is_killed_noisy(
+                    item.function, qc_fixture, mutant, noise_rate,
+                    shots=item.config.getoption("--shots"),
+                    threshold=item.config.getoption("--threshold")
+                )
+                if not ideal_killed:
+                    diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))
+                    survived.append((operator, gate_idx, diagnosis, None))
+                elif mutant_killed:
                     killed += 1
                 else:
                     diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
