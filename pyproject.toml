@@ -3,14 +3,33 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "qtest"
-version = "0.1.0"
-dependencies = ["pytest", "qiskit"]
-
-[tool.pytest.ini_options]
-markers = [
-    "quantum_mutate: run quantum mutation testing on this test"
+name = "qtest" 
+version = "2.0.0"
+description = "Mutation testing for Qiskit quantum circuits as a pytest plugin"
+authors = [
+    {name = "BRAHIMI Manel", email = "manelbrh13@outlook.fr"}
 ]
+license = {text = "MIT"}
+keywords = ["pytest", "qiskit", "quantum", "mutation-testing", "testing"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://github.com/manelbrh1342/qtest"
+Repository = "https://github.com/manelbrh1342/qtest.git"
+Documentation = "https://github.com/manelbrh1342/qtest#readme"
+"Bug Tracker" = "https://github.com/manelbrh1342/qtest/issues"
 
 [project.entry-points."pytest11"]
 qtest = "qtest.plugin"
