@@ -86,7 +86,7 @@ def param_perturbation_mutants(qc, epsilon=PERTURBATION_EPSILON):
 def gate_insertion_mutants(qc):
     """
     Insert an extra X or Z gate at every position in the circuit, on every qubit.
-    I (identity) is intentionally excluded — it is always a no-op and produces
+    I (identity) is intentionally excluded ,it is always a no-op and produces
     mutants that can never be killed, inflating the total count without value.
     Each insertion produces a circuit that is one gate longer than the original.
     """
@@ -112,7 +112,7 @@ def control_flip_mutants(qc):
     """
     For every controlled gate, insert X before and after its control qubit.
     X·CX·X on the control is equivalent to flipping which basis state triggers
-    the gate — a subtle semantic bug that probability-only tests often miss.
+    the gate ,a subtle semantic bug that probability-only tests often miss.
     """
     mutants = []
     for i, inst in enumerate(qc.data):

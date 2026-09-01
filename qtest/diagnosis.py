@@ -45,11 +45,11 @@ def diagnose_survivor(original_qc, mutant_qc,source,noise_enabled=False,fidelity
             "reason": "global_phase",
             "explanation": (
                 "This mutant differs from the original only by a global phase "
-                "factor. Global phase is physically undetectable — no measurement "
+                "factor. Global phase is physically undetectable, so no testor assertion can distinguish."
                 "or assertion can distinguish these two circuits."
             ),
             "suggestion": (
-                "No action needed. This mutant is unkillable by physics — "
+                "No action needed. This mutant is unkillable by physics "
                 "global phase cannot be observed."
             )
         }

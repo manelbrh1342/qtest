@@ -153,6 +153,7 @@ def test_qft_strong(qft_circuit):
 def param_circuit():
     theta = Parameter('theta')
     qc = QuantumCircuit(1)
+    qc.h(0)
     qc.rz(theta, 0)
     return qc.assign_parameters({theta: np.pi / 2})
 
@@ -162,7 +163,7 @@ def param_circuit():
 def test_parameterized(param_circuit):
     sv = Statevector(param_circuit)
     probs = sv.probabilities_dict()
-    assert probs.get('0', 0) > 0.9
+    assert probs.get('0', 0) > 0.3
 
 # Strong counterpart: full statevector comparison against the correct bound circuit.
 @pytest.mark.quantum_mutate(circuit="param_circuit")
@@ -170,6 +171,7 @@ def test_parameterized_strong(param_circuit):
     sv = Statevector(param_circuit)
     theta = Parameter('theta')
     expected_qc = QuantumCircuit(1)
+    expected_qc.h(0)
     expected_qc.rz(theta, 0)
     expected_qc = expected_qc.assign_parameters({theta: np.pi / 2})
     expected_sv = Statevector(expected_qc)

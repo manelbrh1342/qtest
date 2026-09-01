@@ -2,7 +2,7 @@ import inspect
 
 import pytest
 from qtest.mutants import generate_all_mutants
-from qtest.oracle import is_killed_by_test, is_killed_hardware_batch, is_killed_noisy, validate_circuit, is_killed
+from qtest.oracle import is_killed_by_test, is_killed_hardware_batch, is_killed_noisy, validate_circuit
 from qtest.diagnosis import diagnose_survivor
 from qiskit_ibm_runtime import QiskitRuntimeService
 import argparse
