@@ -10,11 +10,7 @@ def _probabilities_match(original,mutant, tol=1e-6):
             return False
     return True
 
-# Note: for single-qubit unentangled circuits, the Statevector oracle
-# cannot fully distinguish global phase from weak assertion. The AST
-# classifier partially resolves this by inspecting assertion strength.
-
-def diagnose_survivor(original_qc, mutant_qc,source,noise_enabled=False,fidelity=None,threshold=0.95):
+def diagnose_survivor(original_qc, mutant_qc,noise_enabled=False,fidelity=None,threshold=0.95):
     if noise_enabled and fidelity is not None:
         return {
             "reason": "noise_survival",
@@ -45,11 +41,11 @@ def diagnose_survivor(original_qc, mutant_qc,source,noise_enabled=False,fidelity
             "reason": "global_phase",
             "explanation": (
                 "This mutant differs from the original only by a global phase "
-                "factor. Global phase is physically undetectable, so no testor assertion can distinguish."
+                "factor. Global phase is physically undetectable, so no measurement "
                 "or assertion can distinguish these two circuits."
             ),
             "suggestion": (
-                "No action needed. This mutant is unkillable by physics "
+                "No action needed. This mutant is unkillable by physics: "
                 "global phase cannot be observed."
             )
         }

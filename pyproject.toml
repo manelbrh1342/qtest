@@ -33,3 +33,5 @@ Documentation = "https://github.com/manelbrh1342/qtest#readme"
 
 [project.entry-points."pytest11"]
 qtest = "qtest.plugin"
+[tool.pytest.ini_options]
+pythonpath = ["."]

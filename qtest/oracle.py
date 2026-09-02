@@ -2,7 +2,6 @@ import copy
 from qiskit import transpile
 from qiskit_aer.primitives import SamplerV2
 from qiskit_aer.noise import depolarizing_error, NoiseModel
-from qiskit.quantum_info import Statevector
 from qiskit.quantum_info import hellinger_fidelity
 from qiskit_ibm_runtime import SamplerV2 as IBMSamplerV2
 

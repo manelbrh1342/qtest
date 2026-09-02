@@ -1,4 +1,3 @@
-import inspect
 
 import pytest
 from qtest.mutants import generate_all_mutants
@@ -73,12 +72,12 @@ def pytest_runtest_call(item):
         )
         for operator, gate_idx, mutant, mutant_killed, fidelity, ideal_killed in hw_results:
             if not ideal_killed:
-                diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))
+                diagnosis = diagnose_survivor(qc_fixture, mutant, noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))
                 survived.append((operator, gate_idx, diagnosis, None))
             elif mutant_killed:
                 killed += 1
             else:
-                diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
+                diagnosis = diagnose_survivor(qc_fixture, mutant, noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
                 survived.append((operator, gate_idx, diagnosis, fidelity))
     else:
         for operator, gate_idx, mutant in mutants:
@@ -89,18 +88,18 @@ def pytest_runtest_call(item):
                     threshold=item.config.getoption("--threshold")
                 )
                 if not ideal_killed:
-                    diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))
+                    diagnosis = diagnose_survivor(qc_fixture, mutant, noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))
                     survived.append((operator, gate_idx, diagnosis, None))
                 elif mutant_killed:
                     killed += 1
                 else:
-                    diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
+                    diagnosis = diagnose_survivor(qc_fixture, mutant, noise_enabled=True, fidelity=fidelity, threshold=item.config.getoption("--threshold"))
                     survived.append((operator, gate_idx, diagnosis, fidelity))
             else:
                 if is_killed_by_test(item.function, mutant):
                     killed += 1
                 else:
-                    diagnosis = diagnose_survivor(qc_fixture, mutant, inspect.getsource(item.function), noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))
+                    diagnosis = diagnose_survivor(qc_fixture, mutant, noise_enabled=False, fidelity=None, threshold=item.config.getoption("--threshold"))
                     survived.append((operator, gate_idx, diagnosis, None))
     total = len(mutants)
     score = killed / total if total > 0 else 0.0
