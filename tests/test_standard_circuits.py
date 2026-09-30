@@ -71,7 +71,7 @@ def dj_circuit():
 def test_deutsch_jozsa(dj_circuit):
     sv = Statevector(dj_circuit)
     probs = sv.probabilities_dict()
-    balanced_outcomes = [k for k in probs if k[0] == '1']
+    balanced_outcomes = [k for k in probs if k[1:] != '00']
     assert len(balanced_outcomes) > 0
 
     n = 2
