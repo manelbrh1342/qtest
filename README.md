@@ -102,13 +102,15 @@ To use `--backend`, you need access to an actual IBM device:
 
 ## Diagnosis engine
 
-When a mutant survives, qtest doesn't stop at "your test missed this." It works out which of several distinct situations is actually the case, using `Operator.equiv()`, `Statevector.equiv()`, and a probability comparison, in that order, as direct, physical ground-truth checks:
+When a mutant survives, qtest doesn't stop at "your test missed this." It works out which of several distinct situations is actually the case, using exact matrix comparison, `Operator.equiv()`, `Statevector.equiv()`, and a probability comparison, checked in that order, as direct, physical ground-truth checks:
 
-**Equivalent circuit.** The mutant is unitarily identical to the original on every possible input, not just the specific state under test. The mutation was a structural no-op. No test could ever kill it, and none should try. Nothing to fix.
+**Equivalent circuit.** The mutant's unitary matrix is exactly identical to the original's on every possible input (checked with `numpy.allclose` on the raw matrix data). The mutation was a structural no-op. No test could ever kill it, and none should try. Nothing to fix.
 
-**Global phase.** The statevectors differ only by an overall phase factor. This is physically unobservable: no measurement, on any basis, can distinguish the two circuits. This is expected behavior, not a weakness in the test, and is documented as such rather than flagged as something to fix.
+**Global phase.** The mutant's unitary differs from the original's only by a global phase factor across every possible input (checked via `Operator.equiv()`). This is physically unobservable: no measurement, on any basis, on any input state, can distinguish the two circuits. This is expected behavior, not a weakness in the test, and is documented as such rather than flagged as something to fix.
 
-**Weak assertion, phase blind.** The two circuits produce identical measurement probabilities, but different statevectors. The test only checked probabilities (for example `probabilities_dict()`), which cannot see phase, so it missed a real, physically detectable difference. The suggested fix is to add a statevector-level comparison, `sv.equiv(expected_state)`, alongside or instead of the probability check.
+**Input masked.** The mutant is genuinely different from the original at the operator level, but happens to produce the same output statevector when starting from the standard ground state |0...0> (checked via `Statevector.equiv()`). The mutation has a real effect, but only on input states other than |0...0>. The suggested fix is to test the circuit on an additional, non-ground input state that is sensitive to the change.
+
+**Weak assertion, phase blind.** The two circuits produce identical measurement probabilities from |0...0>, but different statevectors. The test only checked probabilities (for example `probabilities_dict()`), which cannot see phase, so it missed a real, physically detectable difference. The suggested fix is to add a statevector-level comparison, `sv.equiv(expected_state)`, alongside or instead of the probability check.
 
 **Weak assertion, fully blind.** The statevectors are substantially different and the difference is measurable, but the test's assertion still didn't catch it, typically because it was checking a structural property like `is_unitary()` rather than the actual output state. This is the strongest case of a genuine test gap. The fix is the same: replace the structural check with a direct comparison against an independently computed expected statevector.
 
@@ -153,7 +155,7 @@ These eight are examples used to validate qtest itself and to generate before/af
 
 **The oracle runs the real test, not a proxy for it.** Mutation score is meaningless if it doesn't reflect what the test actually checks. This is why the default oracle calls the developer's test function directly against each mutant, and why the noisy and hardware oracles check that same ideal outcome first before ever attributing a survival to noise.
 
-**Unkillable is not the same as untested.** A mutant that survives because it is physically equivalent to the original, or because it differs only by global phase, is not a gap in the test suite. qtest's diagnosis engine exists specifically to keep that distinction from getting lost in a single aggregate score.
+**Unkillable is not the same as untested.** A mutant that survives because it is physically equivalent to the original, differs only by global phase, or has an effect masked entirely by the |0...0> initial state is not a gap in the test suite. qtest's diagnosis engine exists specifically to keep that distinction from getting lost in a single aggregate score.
 
 **Weak tests are meant to be visible, not hidden.** The QFT and parameterized circuits ship with both a weak and a strong version of their tests intentionally, to show the score moving from close to zero toward the circuit's physical ceiling, depending only on what the assertion checks. That ceiling is rarely 100%: once a strong assertion catches every physically detectable difference, remaining survivors are typically global-phase or structurally-equivalent mutants that no test could ever kill. A strong QFT test, for example, reaches 49%, with every surviving mutant diagnosed as unkillable by physics or by design, not by a gap in the assertion.
 
